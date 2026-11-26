@@ -1,10 +1,7 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  setModalChange,
-  loginSuccess,
-  setLoading,
-} from "../features/auth/authSlice";
+import {setModalChange,clearAuthError} from "../features/auth/authSlice";
+import {registerUser,loginUser} from "../features/auth/authThunks";
 
 import {
   MessageCircle,
@@ -23,18 +20,17 @@ import {
 const AuthModal = () => {
     const dispatch = useDispatch();
 
-    const { modalType, isAuthenticated, isLoading } = useSelector(
-        (state) => state.auth,
+    const { modalType, isAuthenticated, isLoading, error } = useSelector(
+        (state) => state.auth
     );
 
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
         name: "",
         email: "",
+        phone: "",
         password: "",
     });
-
-    const [error, setError] = useState("");
 
     const isSignup = modalType === "signup";
 
@@ -46,35 +42,51 @@ const AuthModal = () => {
     };
 
     const handleSwitch = (type) => {
-        setError("");
+        dispatch(clearAuthError());
+
         setFormData({
             name: "",
             email: "",
+            phone: "",
             password: "",
         });
+
         setShowPassword(false);
         dispatch(setModalChange(type));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError("");
 
-        try {
-            dispatch(setLoading(true));
+        dispatch(clearAuthError());
 
-            // TODO: Connect your login/signup API here.
-            // Example:
-            // const response = await authService.login(formData);
+        if (isSignup) {
+            const result = await dispatch(registerUser(formData));
 
-            // Dispatch loginSuccess ONLY after the backend
-            // confirms successful authentication.
-            //
-            // dispatch(loginSuccess(response.data.user));
-        } catch (err) {
-            setError(err.response?.data?.message || "Something went wrong.");
-        } finally {
-            dispatch(setLoading(false));
+            if (registerUser.fulfilled.match(result)) {
+                setFormData({
+                    name: "",
+                    email: "",
+                    phone: "",
+                    password: "",
+                });
+            }
+        } else {
+            const result = await dispatch(
+                loginUser({
+                    email: formData.email,
+                    password: formData.password,
+                })
+            );
+
+            if (loginUser.fulfilled.match(result)) {
+                setFormData({
+                    name: "",
+                    email: "",
+                    phone: "",
+                    password: "",
+                });
+            }
         }
     };
 
@@ -168,30 +180,31 @@ const AuthModal = () => {
                                     />
                                 </div>
                             </div>
+                            {isSignup && (
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-slate-300">
+                                        Phone Number
+                                    </label>
 
-                            <div>
-                                <label className="mb-2 block text-sm font-medium text-slate-300">
-                                    Phone Number
-                                </label>
+                                    <div className="relative">
+                                        <Phone
+                                            size={18}
+                                            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+                                        />
 
-                                <div className="relative">
-                                    <Phone
-                                        size={18}
-                                        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
-                                    />
-
-                                    <input
-                                        type="number"
-                                        name="phone"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        placeholder="123-456-7890"
-                                        required
-                                        autoComplete="phone"
-                                        className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-3.5 pl-12 pr-4 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-indigo-500 focus:bg-indigo-500/[0.05] focus:ring-4 focus:ring-indigo-500/10"
-                                    />
+                                        <input
+                                            type="number"
+                                            name="phone"
+                                            value={formData.phone}
+                                            onChange={handleChange}
+                                            placeholder="123-456-7890"
+                                            required
+                                            autoComplete="phone"
+                                            className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-3.5 pl-12 pr-4 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-indigo-500 focus:bg-indigo-500/[0.05] focus:ring-4 focus:ring-indigo-500/10"
+                                        />
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             <div>
                                 <label className="mb-2 block text-sm font-medium text-slate-300">
@@ -268,8 +281,8 @@ const AuthModal = () => {
 
                             {!isLoading && (
                                 <ArrowRight
-                                size={18}
-                                className="transition group-hover:translate-x-1"
+                                    size={18}
+                                    className="transition group-hover:translate-x-1"
                                 />
                             )}
                             </button>
