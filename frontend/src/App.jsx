@@ -1,4 +1,7 @@
-import AuthModal from "./layouts/AuthModel"
+
+import AuthModal from "./layouts/AuthModel";
+import ChatPage from "./pages/ChatPage";
+
 import { getMe } from "./features/auth/authThunks";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -16,7 +19,7 @@ function App() {
 
     if (!authChecked) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center bg-[#080D19] text-white">
                 Loading...
             </div>
         );
@@ -24,9 +27,13 @@ function App() {
 
     return (
         <>
-            <AuthModal />
+            {isAuthenticated ? (
+                <ChatPage />
+            ) : (
+                <AuthModal />
+            )}
         </>
-    )
+    );
 }
 
-export default App
+export default App;
